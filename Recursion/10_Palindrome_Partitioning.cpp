@@ -32,7 +32,7 @@
 #include <bits/stdc++.h>
 using namespace std;
 
-class Solution
+class Solution1
 {
 private:
     /**
@@ -106,32 +106,93 @@ public:
     }
 };
 
+
+/*
+ * Problem: Palindrome Partitioning II (Optimized Version)
+ * * APPROACH: Recursion with Memoization + Pre-computed Palindrome Table
+ * * 1. Pre-computation Phase:
+ * We build a 2D boolean table `isPal[n][n]`.
+ * isPal[i][j] is TRUE if the substring s[i...j] is a palindrome.
+ * This allows us to check palindrome status in O(1) later.
+ * * 2. Solver Phase:
+ * We use standard recursion to find the minimum cuts, but now looking up
+ * palindromes is instant.
+ * * COMPLEXITY ANALYSIS:
+ * --------------------
+ * Time Complexity: $$O(N^2)$$
+ * - Pre-computation: We fill an N*N table with nested loops = $$O(N^2)$$.
+ * - Recursion: There are N states. Inside each state, we loop N times.
+ * The check inside the loop is now $$O(1)$$. 
+ * Work = $$N \times N \times 1 = O(N^2)$$.
+ * - Total Time = $$O(N^2) + O(N^2) \approx O(N^2)$$.
+ * * Space Complexity: $$O(N^2)$$
+ * - $$O(N^2)$$ for the `isPal` table (Dominant term).
+ * - $$O(N)$$ for the `dp` array.
+ * - $$O(N)$$ for recursion stack space.
+ */
+
+
+class Solution2 {
+private: 
+    // Recursive solver
+    int solve(int index, const int n, vector<int> &dp, const vector<vector<bool>> &isPal) {
+        // Base Case: Reached end of string, 0 segments needed for empty string
+        if (index == n) return 0;
+
+        // Memoization: Return pre-calculated result
+        if (dp[index] != -1) return dp[index];
+
+        int min_cost = INT_MAX;
+
+        // Try every possible cut from 'index' to 'n-1'
+        for (int i = index; i < n; i++) {
+            
+            // OPTIMIZATION: Check if s[index...i] is palindrome in O(1) time
+            if (isPal[index][i]) {
+                // 1 cost for this segment + cost for the remaining suffix
+                int cost = 1 + solve(i + 1, n, dp, isPal);
+                min_cost = min(cost, min_cost);
+            }
+        }
+        
+        return dp[index] = min_cost;
+    }
+
+public:
+    int minCut(string s) {
+        int n = s.size();
+        if (n == 0) return 0;
+
+        // --- STEP 1: Pre-compute Palindrome Table ---
+        // isPal[i][j] will store true if s[i...j] is a palindrome
+        vector<vector<bool>> isPal(n, vector<bool>(n, false));
+
+        // We fill the table. 'i' is the start index, 'j' is the end index.
+        // We iterate backwards for 'i' so that when we compute isPal[i][j],
+        // the inner palindrome isPal[i+1][j-1] is already computed.
+        for (int i = n - 1; i >= 0; i--) {
+            for (int j = i; j < n; j++) {
+                if (s[i] == s[j]) {
+                    // It is a palindrome if:
+                    // 1. It is 1 char long (j - i < 2)
+                    // 2. OR the inner substring (i+1 to j-1) is a palindrome
+                    if (j - i < 2 || isPal[i + 1][j - 1]) {
+                        isPal[i][j] = true;
+                    }
+                }
+            }
+        }
+
+        // --- STEP 2: Solve with Memoization ---
+        vector<int> dp(n, -1);
+        
+        // We subtract 1 because solve() returns the number of *segments*.
+        // Cuts = Segments - 1. (e.g., "a|b" is 2 segments, 1 cut)
+        return solve(0, n, dp, isPal) - 1;
+    }
+};
+
 int main()
 {
-    Solution sol;
-    string s = "aab";
-
-    // Execute logic
-    vector<vector<string>> result = sol.partition(s);
-
-    // Output results
-    cout << "Input: " << s << endl;
-    cout << "Output: [" << endl;
-    for (size_t i = 0; i < result.size(); i++)
-    {
-        cout << "  [";
-        for (size_t j = 0; j < result[i].size(); j++)
-        {
-            cout << "\"" << result[i][j] << "\"";
-            if (j < result[i].size() - 1)
-                cout << ", ";
-        }
-        cout << "]";
-        if (i < result.size() - 1)
-            cout << ",";
-        cout << endl;
-    }
-    cout << "]" << endl;
-
     return 0;
 }
